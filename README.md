@@ -29,7 +29,7 @@
 
 ## 팀별 가상 키 발급
 
-프록시가 뜬 상태에서 실행하면 team_a~team_d 4개의 가상 키가 생성됩니다.
+프록시가 뜬 상태에서 실행하면 `.env`의 `TEAMS`에 지정한 팀들의 가상 키가 생성됩니다.
 
 ```bash
 LITELLM_MASTER_KEY=<.env에 넣은 값> \
@@ -37,6 +37,9 @@ PROXY_URL=http://localhost:4000 \
 MAX_BUDGET=50 RPM_LIMIT=20 TPM_LIMIT=100000 \
 bash scripts/create_team_keys.sh
 ```
+
+- `TEAMS`: 생성할 팀 이름 목록, 쉼표 구분 (예: `team_1,team_2,team_3,team_4`). 팀 개수는 이 목록의 길이로 정해집니다.
+- `TEAM_BUDGETS` / `TEAM_RPM_LIMITS` / `TEAM_TPM_LIMITS`: `TEAMS`와 같은 순서로 매칭되는 팀별 예산(USD)/분당 요청수(RPM)/분당 토큰수(TPM), 쉼표 구분 (예: `TEAM_BUDGETS=50,30,50,50`). 비어있거나 개수가 모자라면 각각 `MAX_BUDGET`/`RPM_LIMIT`/`TPM_LIMIT` 기본값이 적용됩니다.
 
 출력된 `key` 값(`sk-litellm-...`)을 각 팀에 전달하면 됩니다. 팀은 아래처럼 기존 OpenAI SDK의
 `base_url`과 `api_key`만 바꿔서 그대로 사용합니다.
@@ -63,3 +66,13 @@ client.chat.completions.create(model="gpt-4o", messages=[...])
 
 - `GET /spend/logs`, `GET /team/info?team_id=team_a` 등으로 팀별 사용량 조회 가능 (Authorization: Bearer `LITELLM_MASTER_KEY`)
 - 예산 초과 시 프록시가 자동으로 429/401을 반환하므로 별도 로직 불필요
+
+## 팀별 예산 대시보드
+
+LiteLLM Proxy에 내장된 Admin UI에서 팀별 예산 잔량을 바로 확인할 수 있습니다.
+
+1. `<프록시 도메인>/ui` 접속
+2. Username: `admin`, Password: `.env`에 넣은 `LITELLM_MASTER_KEY` 값으로 로그인
+3. 좌측 **Teams** 메뉴 → 팀별 `Spend / Budget`(예: `$3.20 of $50`) 확인
+   - `scripts/create_team_keys.sh`가 `/team/new`로 팀 객체를 실제로 등록하기 때문에 이 화면에 표시됩니다.
+4. **Virtual Keys** 메뉴에서는 키 단위로 더 세부적인 Spend/Budget 확인 가능
